@@ -1,9 +1,15 @@
 """
 Distributed Component High-Throughput Traffic & Stress Testing Simulator for Quantum Fourier Transform Qft.
 """
+import os
 import time
 import random
 import sys
+
+# Ensure audit key is set for simulation
+if not os.getenv("AUDIT_SECRET_KEY"):
+    os.environ["AUDIT_SECRET_KEY"] = "simulator-test-key-not-for-production-2026"
+
 from agents.models import SystemTaskPayload
 from agents.supervisor import SystemSupervisor
 from agents.base import PHIGuard, SecurityException, AuditLogger

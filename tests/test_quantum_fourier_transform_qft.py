@@ -3,8 +3,13 @@ Automated Pytest Test Suite for Quantum Fourier Transform Qft.
 Domain: Post-Quantum Cryptography & Hardware Security
 Standard: NIST FIPS 203/204/205 / ISO/IEC 17825 Standards
 """
+import os
 import sys
 from pathlib import Path
+
+# Set audit key before importing agents
+os.environ.setdefault("AUDIT_SECRET_KEY", "test-suite-key-not-for-production-2026")
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest

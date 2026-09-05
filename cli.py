@@ -1,6 +1,7 @@
 """
 CLI for Quantum Fourier Transform (QFT) Engine.
-Provides commands for QFT computation, inverse QFT, period finding, and matrix display.
+Provides commands for QFT computation, inverse QFT, period finding, matrix display,
+audit operations, and LLM chat.
 """
 import argparse
 import cmath
@@ -16,6 +17,9 @@ from qft_engine.engine import (
     period_finding_qft, phase_estimation_simple,
     reverse_qubits, tensor_product,
 )
+from agents.base import AuditLogger, PHIGuard, SecurityException
+from agents.models import SystemTaskPayload, UrgencyLevel
+from agents.supervisor import SystemSupervisor
 
 
 def cmd_qft(args):
@@ -154,6 +158,56 @@ def cmd_phase_est(args):
     return 0
 
 
+def cmd_audit(args):
+    """Run an audit task evaluation via the supervisor."""
+    supervisor = SystemSupervisor(model_provider="mock")
+    payload = SystemTaskPayload(
+        task_id=args.task_id,
+        target_identifier=args.target_id,
+        primary_metric=args.primary_metric,
+        secondary_metric=args.secondary_metric,
+        status_descriptor=args.status_descriptor,
+        is_critical_flag=args.is_critical,
+    )
+    dossier = supervisor.process_task(payload)
+    print(f"Audit completed for task {dossier.task_id}")
+    print(f"  Urgency: {dossier.overall_urgency.value}")
+    print(f"  Integrity: {dossier.integrity_status.value}")
+    print(f"  Alerts: {dossier.total_alerts}")
+    print(f"  Audit hash: {dossier.audit_hash}")
+    return 0
+
+
+def cmd_chat(args):
+    """Send a chat query to the supervisor."""
+    supervisor = SystemSupervisor(model_provider="mock")
+    query = " ".join(args.query_parts)
+    try:
+        response = supervisor.query_supervisory_chat(query)
+        print(response)
+        return 0
+    except SecurityException as e:
+        print(f"PHI Guard Error: {e}")
+        return 1
+
+
+def cmd_verify_audit(args):
+    """Verify the integrity of the audit trail."""
+    valid = AuditLogger.verify_integrity()
+    trail_len = len(AuditLogger.get_trail())
+    if valid:
+        print(f"Audit trail integrity VERIFIED ({trail_len} entries)")
+    else:
+        print(f"Audit trail integrity FAILED ({trail_len} entries)")
+    return 0 if valid else 1
+
+
+def cmd_serve(args):
+    """Start the FastAPI server (placeholder)."""
+    print("FastAPI server mode: use 'uvicorn agents.api:app' to start the REST API")
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog="quantum-fourier-transform-qft",
@@ -193,6 +247,27 @@ def main(argv=None):
     p.add_argument("--phases", type=str, default="0.25,0.5", help="Comma-separated phases")
     p.add_argument("--ancilla-qubits", type=int, default=4, help="Number of ancilla qubits")
 
+    # audit
+    p = sub.add_parser("audit", help="Run a supervisor audit task")
+    p.add_argument("--task-id", type=str, default="CLI-TASK-01", help="Task identifier")
+    p.add_argument("--target-id", type=str, default="TARGET-01", help="Target identifier")
+    p.add_argument("--primary-metric", type=float, default=10.0, help="Primary metric value")
+    p.add_argument("--secondary-metric", type=float, default=5.0, help="Secondary metric value")
+    p.add_argument("--status-descriptor", type=str, default="NOMINAL", help="Status descriptor")
+    p.add_argument("--is-critical", action="store_true", help="Mark as critical")
+
+    # chat
+    p = sub.add_parser("chat", help="Chat with the supervisor")
+    p.add_argument("query_parts", nargs="+", help="Query text")
+
+    # verify-audit
+    p = sub.add_parser("verify-audit", help="Verify audit trail integrity")
+
+    # serve
+    p = sub.add_parser("serve", help="Start the FastAPI server")
+    p.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind to")
+    p.add_argument("--port", type=int, default=8000, help="Port to bind to")
+
     args = parser.parse_args(argv)
 
     handlers = {
@@ -202,6 +277,10 @@ def main(argv=None):
         'period': cmd_period,
         'superposition': cmd_superposition,
         'phase-est': cmd_phase_est,
+        'audit': cmd_audit,
+        'chat': cmd_chat,
+        'verify-audit': cmd_verify_audit,
+        'serve': cmd_serve,
     }
     return handlers[args.command](args)
 
