@@ -182,9 +182,13 @@ class TestCLICommands:
         from cli import main
         assert main(["verify-audit"]) == 0
 
-    def test_serve_command(self):
+    def test_serve_command(self, monkeypatch):
         from cli import main
-        assert main(["serve"]) == 0
+        import uvicorn
+        seen = []
+        monkeypatch.setattr(uvicorn, "run", lambda app, **kwargs: seen.append(kwargs))
+        assert main(["serve", "--host", "127.0.0.1", "--port", "8765"]) == 0
+        assert seen == [{"host": "127.0.0.1", "port": 8765}]
 
     def test_chat_blocks_phi(self):
         from cli import main
