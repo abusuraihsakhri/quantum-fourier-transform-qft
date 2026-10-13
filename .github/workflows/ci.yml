@@ -1,40 +1,60 @@
-name: Quantum Fourier Transform Qft CI/CD & Security Verification
+name: QFT test and security verification
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [master, main]
   pull_request:
-    branches: [ master, main ]
+    branches: [master, main]
+
+permissions:
+  contents: read
 
 jobs:
   test-and-audit:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
+    env:
+      # Ephemeral test-only key. Production secrets are never stored in source control.
+      AUDIT_SECRET_KEY: CI-TEST-ONLY-DO-NOT-USE-IN-PRODUCTION
 
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install fastapi uvicorn pydantic pytest
-
-    - name: Run Pytest Suite
-      run: |
-        pytest -v
-
-    - name: Security SAST & Zero-PHI Audit
-      run: |
-        python -c "
-        from agents.base import PHIGuard, AuditLogger
-        import pytest
-        assert AuditLogger.verify_integrity() is True
-        print('Security & Zero-PHI Audit Passed!')
-        "
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Python package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest fastapi uvicorn pydantic
+      - name: Python test suite
+        run: python -m pytest -q
+      - name: Browser syntax and mathematical regression tests
+        run: |
+          node --check web/qft.js
+          node --check web/app.js
+          node --test tests/test_browser_qft.cjs
+      - name: Security verification
+        run: |
+          python - <<'PY'
+          from agents.base import AuditLogger, PHIGuard, SecurityException
+          import hmac
+          entry = AuditLogger.log("ci", "test", "CHECK", {"purpose": "security-test"})
+          assert AuditLogger.verify_integrity()
+          entry["actor"] = "tampered"
+          assert not AuditLogger.verify_integrity()
+          try:
+              PHIGuard.assert_no_phi("MRN-12345678")
+          except SecurityException:
+              pass
+          else:
+              raise AssertionError("PHI guard did not reject an identifier")
+          print("Audit HMAC and PHI guard checks passed")
+          PY
