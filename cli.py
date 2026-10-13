@@ -203,8 +203,14 @@ def cmd_verify_audit(args):
 
 
 def cmd_serve(args):
-    """Start the FastAPI server (placeholder)."""
-    print("FastAPI server mode: use 'uvicorn agents.api:app' to start the REST API")
+    """Run the optional FastAPI service."""
+    try:
+        import uvicorn
+        from agents.api import app
+    except ImportError:
+        print("Error: install server support with 'pip install -e .[server]'", file=sys.stderr)
+        return 1
+    uvicorn.run(app, host=args.host, port=args.port)
     return 0
 
 
