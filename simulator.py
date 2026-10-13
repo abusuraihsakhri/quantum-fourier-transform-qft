@@ -8,7 +8,8 @@ import sys
 
 # Ensure audit key is set for simulation
 if not os.getenv("AUDIT_SECRET_KEY"):
-    os.environ["AUDIT_SECRET_KEY"] = "simulator-test-key-not-for-production-2026"
+    import secrets
+    os.environ["AUDIT_SECRET_KEY"] = secrets.token_hex(32)  # Ephemeral simulation key
 
 from agents.models import SystemTaskPayload
 from agents.supervisor import SystemSupervisor
