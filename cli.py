@@ -271,7 +271,7 @@ def main(argv=None):
 
     # serve
     p = sub.add_parser("serve", help="Start the FastAPI server")
-    p.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind to")
+    p.add_argument("--host", type=str, default="127.0.0.1", help="Host to bind to")
     p.add_argument("--port", type=int, default=8000, help="Port to bind to")
 
     args = parser.parse_args(argv)
