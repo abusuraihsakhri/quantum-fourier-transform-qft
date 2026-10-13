@@ -5,7 +5,50 @@ Domain: Quantum Computing
 import uuid
 from typing import Dict, Any, List, Optional
 from .models import FrontierPayload, AgentTelemetryAlert, ExecutionStatus
-from .engine import FrontierDomainEngine
+import math
+
+
+class FrontierDomainEngine:
+    """Demonstration-only thresholds for the legacy agent workflow.
+
+    These checks are unrelated to physical QFT correctness and do not
+    constitute a quantum-hardware or safety specification.
+    """
+
+    @staticmethod
+    def evaluate_primary_parameter(value):
+        if not math.isfinite(value):
+            raise ValueError("Primary metric must be finite")
+        if value <= 25:
+            return None
+        return {
+            "summary": "Demo primary threshold exceeded",
+            "details": f"Value {value} exceeds the demonstration threshold 25.",
+            "remediation": "Review the supplied synthetic measurement.",
+        }
+
+    @staticmethod
+    def evaluate_secondary_kinetics(value, critical):
+        if not math.isfinite(value):
+            raise ValueError("Secondary metric must be finite")
+        if not critical and value <= 12:
+            return None
+        return {
+            "summary": "Demo secondary threshold or critical flag",
+            "details": f"Value {value}; critical flag: {bool(critical)}.",
+            "remediation": "Review the supplied synthetic status.",
+        }
+
+    @staticmethod
+    def audit_specification_conformance(descriptor, attributes):
+        if not any(word in descriptor.upper() for word in ("FAIL", "REJECT", "ANOMALY", "DISCORDANT")):
+            return None
+        return {
+            "summary": "Demo status descriptor flagged",
+            "details": "The supplied status descriptor indicates a simulated alert.",
+            "remediation": "Review the synthetic test input.",
+        }
+
 
 
 class ControlledPhaseLadderAgent:

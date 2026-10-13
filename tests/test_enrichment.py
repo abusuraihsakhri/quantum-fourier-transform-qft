@@ -10,7 +10,6 @@ from enrichment import (
     ApproximateQftWithSelectiveRotationPruningEngine,
     ImplementationEngine,
     FilesToCreatemodifyEngine,
-    TestingEngine,
     QftbasedQuantumArithmeticUnitEngine,
     QuantumfouriertransformqftEnrichmentSuite,
     enrichment_suite,

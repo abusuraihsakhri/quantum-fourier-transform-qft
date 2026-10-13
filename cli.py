@@ -203,8 +203,14 @@ def cmd_verify_audit(args):
 
 
 def cmd_serve(args):
-    """Start the FastAPI server (placeholder)."""
-    print("FastAPI server mode: use 'uvicorn agents.api:app' to start the REST API")
+    """Run the optional FastAPI service."""
+    try:
+        import uvicorn
+        from agents.api import app
+    except ImportError:
+        print("Error: install server support with 'pip install -e .[server]'", file=sys.stderr)
+        return 1
+    uvicorn.run(app, host=args.host, port=args.port)
     return 0
 
 
@@ -265,10 +271,34 @@ def main(argv=None):
 
     # serve
     p = sub.add_parser("serve", help="Start the FastAPI server")
-    p.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind to")
+    p.add_argument("--host", type=str, default="127.0.0.1", help="Host to bind to")
     p.add_argument("--port", type=int, default=8000, help="Port to bind to")
 
     args = parser.parse_args(argv)
+
+    # Reject invalid sizes and indices before allocating exponential state vectors.
+    if hasattr(args, "qubits"):
+        maximum = 6 if args.command == "matrix" else 12
+        if not 1 <= args.qubits <= maximum:
+            print(f"Error: qubits must be between 1 and {maximum}", file=sys.stderr)
+            return 1
+    if args.command in ("qft", "iqft") and not 0 <= args.state < (1 << args.qubits):
+        print("Error: basis index out of range", file=sys.stderr)
+        return 1
+    if args.command == "period" and not 1 <= args.period <= (1 << args.qubits):
+        print("Error: period must be between 1 and 2^n", file=sys.stderr)
+        return 1
+    if args.command == "phase-est":
+        if not 1 <= args.ancilla_qubits <= 12:
+            print("Error: ancilla qubits must be between 1 and 12", file=sys.stderr)
+            return 1
+        try:
+            phases = [float(value) for value in args.phases.split(",")]
+            if not phases or any(not math.isfinite(phi) for phi in phases):
+                raise ValueError
+        except ValueError:
+            print("Error: --phases requires comma-separated finite numbers", file=sys.stderr)
+            return 1
 
     handlers = {
         'qft': cmd_qft,

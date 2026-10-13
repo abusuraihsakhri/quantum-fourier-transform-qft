@@ -17,11 +17,21 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 requires-python = ">=3.9"
-dependencies = []
+dependencies = ["pydantic>=2,<3"]
+
+[project.optional-dependencies]
+server = ["fastapi>=0.110,<1", "uvicorn>=0.25,<1"]
+test = ["pytest>=7,<10"]
 
 [project.scripts]
-quantum-fourier-transform-qft = "qft_engine.cli:main"
+quantum-fourier-transform-qft = "cli:main"
 
 [project.urls]
 Homepage = "https://github.com/abusuraihsakhri/quantum-fourier-transform-qft"
 Repository = "https://github.com/abusuraihsakhri/quantum-fourier-transform-qft.git"
+
+[tool.setuptools]
+py-modules = ["cli", "simulator", "enrichment", "qft_engine_app"]
+
+[tool.setuptools.packages.find]
+include = ["agents*", "qft_engine*"]

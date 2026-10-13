@@ -18,6 +18,19 @@ from typing import List, Tuple, Optional
 # ─── Gate Matrices ───────────────────────────────────────────────────────────
 
 SQRT2_INV = 1.0 / math.sqrt(2.0)
+MAX_STATE_QUBITS = 12
+MAX_MATRIX_QUBITS = 6
+
+
+def _check_qubits(n: int, maximum: int = MAX_STATE_QUBITS) -> None:
+    if not isinstance(n, int) or isinstance(n, bool) or not 1 <= n <= maximum:
+        raise ValueError(f"n must be an integer between 1 and {maximum}")
+
+
+def _check_state_length(state: List[complex], n: int) -> None:
+    _check_qubits(n)
+    if len(state) != (1 << n):
+        raise ValueError(f"Expected {1 << n} amplitudes for {n} qubits")
 
 # Hadamard gate: H = 1/√2 [[1, 1], [1, -1]]
 H_MATRIX = [
@@ -62,6 +75,7 @@ def controlled_rotation_gate(k: int) -> List[List[complex]]:
 
 def zero_state(n: int) -> List[complex]:
     """Return |0...0⟩ state vector for n qubits (length 2^n)."""
+    _check_qubits(n)
     N = 2 ** n
     state = [complex(0, 0)] * N
     state[0] = complex(1, 0)
@@ -70,7 +84,10 @@ def zero_state(n: int) -> List[complex]:
 
 def basis_state(n: int, index: int) -> List[complex]:
     """Return |index⟩ computational basis state for n qubits."""
+    _check_qubits(n)
     N = 2 ** n
+    if not isinstance(index, int) or isinstance(index, bool) or not 0 <= index < N:
+        raise ValueError(f"Basis index must be between 0 and {N - 1}")
     state = [complex(0, 0)] * N
     state[index] = complex(1, 0)
     return state
@@ -152,6 +169,7 @@ def qft_circuit(n: int) -> List[Tuple[str, dict]]:
 
 def apply_qft(state: List[complex], n: int) -> List[complex]:
     """Apply QFT to an n-qubit state vector using the standard circuit."""
+    _check_state_length(state, n)
     gates = qft_circuit(n)
     for gate_name, params in gates:
         if gate_name == 'H':
@@ -168,6 +186,7 @@ def apply_qft(state: List[complex], n: int) -> List[complex]:
 
 def apply_inverse_qft(state: List[complex], n: int) -> List[complex]:
     """Apply inverse QFT (QFT†) by reversing and conjugating the QFT circuit."""
+    _check_state_length(state, n)
     # First reverse qubits (undo the swap at end of QFT)
     state = reverse_qubits(state, n)
     # Apply gates in reverse order, with conjugate transpose
@@ -202,6 +221,7 @@ def qft_matrix(n: int) -> List[List[complex]]:
     """Construct the full QFT matrix F_N where N=2^n.
     F_N[j][k] = 1/√N × ω^(jk) where ω = e^(2πi/N)
     """
+    _check_qubits(n, MAX_MATRIX_QUBITS)
     N = 2 ** n
     omega = cmath.exp(2j * cmath.pi / N)
     norm = 1.0 / math.sqrt(N)
@@ -218,6 +238,7 @@ def inverse_qft_matrix(n: int) -> List[List[complex]]:
     """Construct the inverse QFT matrix F_N†.
     F_N†[j][k] = 1/√N × ω^(-jk)
     """
+    _check_qubits(n, MAX_MATRIX_QUBITS)
     N = 2 ** n
     omega = cmath.exp(-2j * cmath.pi / N)
     norm = 1.0 / math.sqrt(N)
@@ -243,34 +264,27 @@ def apply_matrix(state: List[complex], matrix: List[List[complex]]) -> List[comp
 # ─── Applications ────────────────────────────────────────────────────────────
 
 def phase_estimation_simple(unitary_phases: List[float], n_ancilla: int) -> List[float]:
-    """Simple phase estimation using QFT.
-    Given eigenvalue phases φ (where eigenvalue = e^(2πiφ)), 
-    estimate them using n_ancilla qubits.
-    Returns estimated phases.
+    """Estimate each supplied eigenphase independently using an inverse QFT.
+
+    This is a known-phase demonstration, not a controlled-unitary simulation.
+    Output resolution is 1/2**n_ancilla.
     """
-    # For a diagonal unitary with known eigenphases, QPE reduces to
-    # preparing the state and applying inverse QFT
+    _check_qubits(n_ancilla)
+    if not unitary_phases or any(not math.isfinite(phi) for phi in unitary_phases):
+        raise ValueError("Provide at least one finite eigenphase")
     N = 2 ** n_ancilla
-    # Create superposition state encoding the phases
-    state = [complex(0, 0)] * N
-    for k in range(N):
-        phase_sum = 0.0
-        for phi in unitary_phases:
-            phase_sum += 2 * cmath.pi * phi * k
-        state[k] = cmath.exp(1j * phase_sum) / math.sqrt(N)
-    
-    # Apply inverse QFT
-    state = apply_inverse_qft(state, n_ancilla)
-    
-    # Get probabilities
-    probs = state_probabilities(state)
-    
-    # Find dominant phases
-    phases = []
-    for i, p in enumerate(probs):
-        if p > 0.01:  # threshold
-            phases.append(i / N)
-    return sorted(phases)
+    estimates = []
+    for phi in unitary_phases:
+        phi = phi % 1.0
+        state = [
+            cmath.exp(2j * cmath.pi * phi * k) / math.sqrt(N)
+            for k in range(N)
+        ]
+        result = apply_inverse_qft(state, n_ancilla)
+        probabilities = state_probabilities(result)
+        best_index = max(range(N), key=lambda i: probabilities[i])
+        estimates.append(best_index / N)
+    return sorted(estimates)
 
 
 def period_finding_qft(period: int, n_qubits: int) -> dict:
@@ -278,7 +292,10 @@ def period_finding_qft(period: int, n_qubits: int) -> dict:
     Creates a periodic state with given period, applies QFT,
     and extracts the period from the frequency spectrum.
     """
+    _check_qubits(n_qubits)
     N = 2 ** n_qubits
+    if not isinstance(period, int) or isinstance(period, bool) or not 1 <= period <= N:
+        raise ValueError(f"period must be an integer between 1 and {N}")
     # Create periodic state: equal superposition of |0⟩, |r⟩, |2r⟩, ...
     state = [complex(0, 0)] * N
     count = 0

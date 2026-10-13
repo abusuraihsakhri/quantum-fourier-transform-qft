@@ -1,236 +1,97 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Fourier Transform Qft — Operations Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #090d16;
-            --card: #111827;
-            --border: #1f293d;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            padding: 2rem;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .header-title h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
-        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
-        .badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 1.5rem;
-        }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-        input, select, textarea {
-            width: 100%;
-            padding: 0.65rem 0.9rem;
-            background: #0d1322;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-        .btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 0.7rem 1.4rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .btn:hover { background: #2563eb; }
-        .terminal {
-            background: #060911;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #10b981;
-            height: 380px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .metrics-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .metric-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-        .metric-val { font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 0.25rem; }
-        .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="description" content="Explore the quantum Fourier transform, inverse QFT and measurement probabilities with an offline state-vector simulator.">
+  <title>Quantum Fourier Transform — Interactive Simulator</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0a1020; --panel:#131e32; --line:#293957; --text:#eff6ff; --muted:#adc0d8; --blue:#6aaaff; --green:#72e7c7; }
+    * { box-sizing:border-box; }
+    body { margin:0; font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; color:var(--text); background:radial-gradient(circle at 60% 0,#172c4d 0,var(--bg) 48%); min-height:100vh; }
+    main { max-width:1100px; margin:auto; padding:34px 22px 64px; }
+    h1 { margin:0; font-size:clamp(1.7rem,3vw,2.4rem); letter-spacing:-.035em; }
+    h2 { font-size:1.12rem; margin:0 0 16px; }
+    p { margin:8px 0 0; }
+    .intro { color:var(--muted); max-width:70ch; }
+    .eyebrow { text-transform:uppercase; letter-spacing:.14em; font-size:.75rem; font-weight:700; color:var(--green); margin-bottom:9px; }
+    .layout { display:grid; grid-template-columns:minmax(255px,340px) 1fr; gap:18px; align-items:start; margin-top:26px; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; box-shadow:0 12px 34px #03091528; }
+    label { display:block; font-size:.88rem; font-weight:650; margin:16px 0 6px; }
+    input,select,button { width:100%; font:inherit; border-radius:8px; }
+    input,select { padding:10px 12px; color:var(--text); background:#0b1527; border:1px solid #405375; }
+    input:disabled { opacity:.45; }
+    button { border:0; background:var(--blue); padding:11px 16px; color:#091427; font-weight:750; cursor:pointer; }
+    button.secondary { background:#253854; color:var(--text); border:1px solid #476286; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    :focus-visible { outline:3px solid var(--green); outline-offset:3px; }
+    .buttons { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:22px; }
+    .help { color:var(--muted); font-size:.8rem; }
+    .error { color:#ffbdbd; min-height:20px; font-size:.85rem; margin-top:10px; }
+    .stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
+    .stat { background:#0d1729; border:1px solid var(--line); border-radius:8px; padding:12px; }
+    .stat-label { color:var(--muted); font-size:.74rem; }
+    .stat-value { font:700 1.16rem ui-monospace,SFMono-Regular,Consolas,monospace; margin-top:4px; color:var(--green); overflow-wrap:anywhere; }
+    .formula { font-family:ui-monospace,Consolas,monospace; font-size:.82rem; padding:12px; background:#0d1729; border-radius:8px; overflow-x:auto; white-space:nowrap; color:#d3e7fd; }
+    .bar-list { display:grid; gap:7px; margin:18px 0 8px; max-height:450px; overflow:auto; padding-right:6px; }
+    .bar-row { display:grid; grid-template-columns:55px minmax(90px,1fr) 68px; gap:9px; align-items:center; font:12px ui-monospace,Consolas,monospace; }
+    .bar-track { background:#0d1729; height:13px; border-radius:4px; overflow:hidden; }
+    .bar-fill { height:100%; background:linear-gradient(90deg,#3976da,#72e7c7); border-radius:4px; }
+    .table-wrap { overflow:auto; max-height:310px; border:1px solid var(--line); border-radius:8px; margin-top:12px; }
+    table { border-collapse:collapse; width:100%; font:12px ui-monospace,Consolas,monospace; }
+    th,td { text-align:right; padding:8px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+    th:first-child,td:first-child { text-align:left; }
+    th { position:sticky; top:0; background:#1c2b44; }
+    .section-gap { margin-top:26px; }
+    footer { margin-top:22px; color:var(--muted); font-size:.84rem; }
+    a { color:#a6caff; }
+    @media (max-width:770px) { .layout { grid-template-columns:1fr; } main { padding:24px 14px 45px; } .panel { padding:16px; } }
+    @media (max-width:400px) { .stats { grid-template-columns:1fr; } }
+  </style>
+  <script src="./qft.js" defer></script>
+  <script src="./app.js" defer></script>
 </head>
 <body>
-
-    <div class="header">
-        <div class="header-title">
-            <h1>Quantum Fourier Transform Qft</h1>
-            <p>Domain: Clinical & Cryptographic AI | Standard: CAP / CLSI / NIST Standards | LabMind-Atlas Architecture</p>
-        </div>
-        <div>
-            <span class="badge">Air-Gapped Active</span>
-            <span class="badge" style="background: rgba(16,185,129,0.2); color: #10b981; border-color: #10b981;">Zero-PHI Guard Active</span>
-        </div>
-    </div>
-
-    <div class="metrics-bar">
-        <div class="metric-box">
-            <div class="metric-label">System Status</div>
-            <div class="metric-val" style="color: var(--success);" id="m-status">OPTIMAL</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Tasks Processed</div>
-            <div class="metric-val" id="m-tasks">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Audit Blocks Signed</div>
-            <div class="metric-val" id="m-audit">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">PHI Interceptions</div>
-            <div class="metric-val" style="color: var(--accent);" id="m-phi">0</div>
-        </div>
-    </div>
-
-    <div class="grid">
-        <div class="card">
-            <h2>⚙️ Dispatch Distributed Component Audit</h2>
-            <div class="form-group">
-                <label>Task / Sample ID</label>
-                <input type="text" id="task_id" value="TASK-2026-LIVE-01">
-            </div>
-            <div class="form-group">
-                <label>Target Identifier</label>
-                <input type="text" id="target_id" value="SPECIMEN-ALPHA-77">
-            </div>
-            <div class="form-group">
-                <label>Primary Measurement / Value</label>
-                <input type="number" id="primary_metric" value="29.4" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Secondary Metric / Kinetic Index</label>
-                <input type="number" id="secondary_metric" value="14.8" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Status / Phenotype Descriptor</label>
-                <input type="text" id="status_descriptor" value="DISCORDANT_ANOMALY">
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="is_critical" checked> Trigger Emergency / Critical Flag</label>
-            </div>
-            <button class="btn" onclick="runAudit()">Execute Distributed Component Audit</button>
-        </div>
-
-        <div class="card">
-            <h2>📊 Real-Time Consensus Dossier & Audit Log</h2>
-            <div class="terminal" id="outputConsole">// Quantum Fourier Transform Qft Operations Console Ready
-// Connection established with Air-Gapped Supervisor
-// Cryptographic HMAC-SHA256 audit ledger loaded.
-// Ready for live task payload dispatch...</div>
-        </div>
-    </div>
-
-    <script>
-        async function runAudit() {
-            const consoleEl = document.getElementById('outputConsole');
-            consoleEl.innerText = "// Dispatching task across specialized workers...
-// Invoking InvariantQCWorker, SafetyEscalationWorker, ProtocolWorker...";
-
-            const payload = {
-                task_id: document.getElementById('task_id').value,
-                target_identifier: document.getElementById('target_id').value,
-                primary_metric: parseFloat(document.getElementById('primary_metric').value),
-                secondary_metric: parseFloat(document.getElementById('secondary_metric').value),
-                status_descriptor: document.getElementById('status_descriptor').value,
-                is_critical_flag: document.getElementById('is_critical').checked
-            };
-
-            try {
-                const res = await fetch('/api/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                consoleEl.innerText = JSON.stringify(data, null, 2);
-                document.getElementById('m-tasks').innerText = parseInt(document.getElementById('m-tasks').innerText) + 1;
-                document.getElementById('m-audit').innerText = parseInt(document.getElementById('m-audit').innerText) + 1;
-            } catch (err) {
-                consoleEl.innerText = "// Offline / Simulation Output:\n" + JSON.stringify({
-                    dossier_id: "DOSSIER-SIM-" + Math.floor(Math.random()*10000),
-                    system: "quantum-fourier-transform-qft",
-                    domain: "Clinical & Cryptographic AI",
-                    task_id: payload.task_id,
-                    overall_urgency: payload.is_critical_flag ? "CRITICAL_STAT_PANIC" : "ELEVATED_RISK",
-                    integrity_status: "DISCORDANT_ANOMALY",
-                    alerts: [
-                        { worker: "InvariantQCWorker", alert: "Primary metric exceeds upper reference bound" },
-                        { worker: "SafetyEscalationWorker", alert: "Critical emergency interlock flag active" }
-                    ],
-                    audit_hash: "HMAC_SHA256_e83f9a72b941d6c381f9"
-                }, null, 2);
-            }
-        }
-    </script>
+<main>
+  <header>
+    <div class="eyebrow">Quantum computing · State-vector simulation</div>
+    <h1>Quantum Fourier Transform</h1>
+    <p class="intro">Apply QFT or inverse QFT to a computational basis state or uniform superposition. Inspect complex amplitudes, measurement probabilities and phases. Calculations run entirely in your browser.</p>
+  </header>
+  <div class="layout">
+    <form class="panel" id="controls" novalidate>
+      <h2>Configure transform</h2>
+      <label for="qubits">Number of qubits</label>
+      <input id="qubits" name="qubits" type="number" min="1" max="8" step="1" value="3" required>
+      <p class="help">1–8 qubits (up to 256 amplitudes)</p>
+      <label for="initial">Input state</label>
+      <select id="initial" name="initial"><option value="basis">Computational basis |j⟩</option><option value="uniform">Uniform superposition |+⟩ⁿ</option></select>
+      <label for="basis">Basis index j</label>
+      <input id="basis" name="basis" type="number" min="0" max="7" step="1" value="3" required>
+      <p class="help" id="basis-help">Valid range: 0–7</p>
+      <label for="direction">Transform</label>
+      <select id="direction" name="direction"><option value="forward">Forward QFT (positive exponent)</option><option value="inverse">Inverse QFT (negative exponent)</option></select>
+      <div class="buttons"><button type="submit">Calculate</button><button class="secondary" id="export" type="button" disabled>Export JSON</button></div>
+      <p id="error" class="error" role="alert"></p>
+    </form>
+    <section class="panel" aria-labelledby="results-heading">
+      <h2 id="results-heading">Simulation results</h2>
+      <div class="stats" aria-live="polite">
+        <div class="stat"><div class="stat-label">Hilbert dimension</div><div class="stat-value" id="dimension">—</div></div>
+        <div class="stat"><div class="stat-label">Total probability</div><div class="stat-value" id="normalization">—</div></div>
+        <div class="stat"><div class="stat-label">Round-trip error</div><div class="stat-value" id="error-value">—</div></div>
+      </div>
+      <div class="formula">QFT |j⟩ = 1/√N Σₖ exp(2πijk/N) |k⟩</div>
+      <h2 class="section-gap">Measurement probabilities</h2>
+      <p class="help" id="plot-note">Calculate to view the spectrum.</p>
+      <div class="bar-list" id="probabilities" aria-label="Probability distribution"></div>
+      <h2 class="section-gap">Complex amplitudes</h2>
+      <p class="help" id="table-note">Amplitudes in the computational basis.</p>
+      <div class="table-wrap"><table><thead><tr><th>State</th><th>Real</th><th>Imaginary</th><th>Phase (°)</th></tr></thead><tbody id="amplitudes"></tbody></table></div>
+    </section>
+  </div>
+  <footer>Educational, noiseless simulator · No accounts, server calls, or data collection · <a href="https://github.com/abusuraihsakhri/quantum-fourier-transform-qft">Source repository</a></footer>
+</main>
 </body>
 </html>
