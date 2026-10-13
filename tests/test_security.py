@@ -104,6 +104,27 @@ class TestAuditTrail:
         trail.logs[0]["current_hash"] = "TAMPERED_HASH"
         assert trail.verify_integrity() is False
 
+    @pytest.mark.parametrize("field", [
+        "actor", "actor_tier", "event_type", "timestamp", "payload_hash", "audit_id"
+    ])
+    def test_audit_detects_signed_field_tampering(self, field):
+        trail = AuditTrail(secret_key="test-key-for-unit-tests-only-2026")
+        trail.log("actor1", "admin", "EVENT_1", {"step": 1})
+        trail.log("actor2", "admin", "EVENT_2", {"step": 2})
+        trail.logs[0][field] = "MODIFIED"
+        assert trail.verify_integrity() is False
+
+    def test_audit_detects_tampering_with_last_hash(self):
+        trail = AuditTrail(secret_key="test-key-for-unit-tests-only-2026")
+        trail.log("actor1", "admin", "EVENT_1", {"step": 1})
+        trail.logs[0]["current_hash"] = "0" * 64
+        assert trail.verify_integrity() is False
+
+    def test_audit_rejects_phi_in_metadata(self):
+        trail = AuditTrail(secret_key="test-key-for-unit-tests-only-2026")
+        with pytest.raises(SecurityException):
+            trail.log("Patient MRN-12345678", "admin", "EVENT", {"step": 1})
+
     def test_audit_requires_secret_key(self):
         # Temporarily clear env var
         old_key = os.environ.pop("AUDIT_SECRET_KEY", None)
