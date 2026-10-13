@@ -270,6 +270,30 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
 
+    # Reject invalid sizes and indices before allocating exponential state vectors.
+    if hasattr(args, "qubits"):
+        maximum = 6 if args.command == "matrix" else 12
+        if not 1 <= args.qubits <= maximum:
+            print(f"Error: qubits must be between 1 and {maximum}", file=sys.stderr)
+            return 1
+    if args.command in ("qft", "iqft") and not 0 <= args.state < (1 << args.qubits):
+        print("Error: basis index out of range", file=sys.stderr)
+        return 1
+    if args.command == "period" and not 1 <= args.period <= (1 << args.qubits):
+        print("Error: period must be between 1 and 2^n", file=sys.stderr)
+        return 1
+    if args.command == "phase-est":
+        if not 1 <= args.ancilla_qubits <= 12:
+            print("Error: ancilla qubits must be between 1 and 12", file=sys.stderr)
+            return 1
+        try:
+            phases = [float(value) for value in args.phases.split(",")]
+            if not phases or any(not math.isfinite(phi) for phi in phases):
+                raise ValueError
+        except ValueError:
+            print("Error: --phases requires comma-separated finite numbers", file=sys.stderr)
+            return 1
+
     handlers = {
         'qft': cmd_qft,
         'iqft': cmd_iqft,
