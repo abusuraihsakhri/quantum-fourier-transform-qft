@@ -63,3 +63,19 @@ def test_phase_estimation_rejects_nonfinite_or_empty_phases(phases):
 def test_cli_handles_invalid_input_without_tracebacks(args):
     from cli import main
     assert main(args) == 1
+
+
+def test_legacy_agent_module_and_api_can_initialize():
+    from qft_engine.agents import QFTCoordinator
+    from qft_engine.models import FrontierPayload
+    from qft_engine.server import create_app
+    coordinator = QFTCoordinator()
+    output = coordinator.process(FrontierPayload(
+        task_id="SYNTHETIC-1",
+        target_identifier="QFT-TEST",
+        primary_metric=0.5,
+        secondary_metric=0.1,
+        status_descriptor="NOMINAL",
+    ))
+    assert output["total_alerts"] == 0
+    assert create_app() is not None
