@@ -4,7 +4,7 @@ FastAPI REST API Server for Quantum Fourier Transform Qft.
 from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from .base import AuditLogger, PHIGuard
+from .base import AuditLogger, PHIGuard, SecurityException
 from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
 
@@ -37,8 +37,10 @@ def metrics():
 
 @app.post("/api/audit")
 def api_audit(payload: SystemTaskPayload):
-    dossier = supervisor.process_task(payload)
-    return dossier.to_dict()
+    try:
+        return supervisor.process_task(payload).to_dict()
+    except SecurityException:
+        raise HTTPException(status_code=400, detail="Sensitive identifiers are not permitted")
 
 
 @app.post("/api/chat")
@@ -46,10 +48,11 @@ def api_chat(req: ChatRequest):
     try:
         ans = supervisor.query_supervisory_chat(req.query)
         return {"response": ans}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except SecurityException:
+        raise HTTPException(status_code=400, detail="Sensitive identifiers are not permitted")
 
 
 @app.get("/api/audit/logs")
 def api_audit_logs():
-    return {"audit_trail": AuditLogger.get_trail(), "verified": AuditLogger.verify_integrity()}
+    # Do not expose internal actor identifiers or signed audit metadata anonymously.
+    return {"entries": len(AuditLogger.get_trail()), "verified": AuditLogger.verify_integrity()}
