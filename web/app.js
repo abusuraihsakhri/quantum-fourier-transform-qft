@@ -71,6 +71,9 @@
     event.preventDefault();
     byId('error').textContent = '';
     try {
+      if (qubits.value.trim() === '' || (initial.value === 'basis' && basis.value.trim() === '')) {
+        throw new Error('Enter a qubit count and basis index.');
+      }
       const n = Number(qubits.value);
       const j = initial.value === 'uniform' ? 0 : Number(basis.value);
       QFT.validate(n, j);
@@ -88,6 +91,13 @@
     } catch (error) {
       latest = null;
       exportButton.disabled = true;
+      byId('dimension').textContent = '—';
+      byId('normalization').textContent = '—';
+      byId('error-value').textContent = '—';
+      byId('probabilities').replaceChildren();
+      byId('amplitudes').replaceChildren();
+      byId('plot-note').textContent = 'Correct the input to view the spectrum.';
+      byId('table-note').textContent = 'Amplitudes in the computational basis.';
       byId('error').textContent = error.message;
     }
   }
