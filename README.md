@@ -1,196 +1,91 @@
 # Quantum Fourier Transform (QFT)
 
-> **Domain:** Quantum Computing Simulation & Post-Quantum Cryptography  
-> **Standards:** NIST FIPS 203/204/205, NIST SP 800-90B
+A dependency-free state-vector implementation of the quantum Fourier transform and its inverse, with a browser demonstration, Python functions, and a command-line interface.
 
-<div align="center">
+## Interactive browser simulator
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB.svg?logo=python&logoColor=white)
-![QFT Engine](https://img.shields.io/badge/QFT-Circuit%20%2B%20Matrix-brightgreen.svg)
-
-</div>
-
----
-
-## Overview
-
-A real Quantum Fourier Transform (QFT) implementation using state vector simulation with Python stdlib only. Provides both circuit-based and matrix-based QFT computation, inverse QFT, period finding, and phase estimation.
-
-The QFT transforms computational basis states to Fourier basis:
-```
-|j⟩ → 1/√N Σ_k ω^(jk) |k⟩  where ω = e^(2πi/N), N = 2^n
-```
-
----
-
-## Features
-
-- **Circuit-based QFT**: Standard gate decomposition with Hadamard and controlled rotation gates
-- **Matrix-based QFT**: Direct matrix construction for verification
-- **Inverse QFT**: QFT† for round-trip verification
-- **Period Finding**: QFT-based period extraction demonstration
-- **Phase Estimation**: Simple quantum phase estimation
-- **CLI Interface**: Full command-line interface for all operations
-- **Enterprise Agents**: Supervisor orchestrator with multi-worker evaluation
-- **PHI Guard**: Outbound PHI detection and blocking
-- **Audit Trail**: HMAC-SHA256 tamper-evident logging
-
----
-
-## Installation
+Open [web/index.html](web/index.html) in a browser, or serve this repository locally:
 
 ```bash
-# Clone the repository
-git clone https://github.com/abusuraihsakhri/quantum-fourier-transform-qft.git
-cd quantum-fourier-transform-qft
-
-# Install dependencies
-pip install -e .
-
-# Optional: Install FastAPI for REST API server
-pip install fastapi uvicorn pydantic
+python -m http.server 8000
+# Open http://localhost:8000/ (redirects to /web/)
 ```
 
----
+The static application supports 1–8 qubits, basis states and uniform superpositions, forward/inverse QFT, complex amplitudes, measurement probabilities, round-trip error, and JSON export. All computations run locally in JavaScript. No account, API, external script, or server computation is required. The root `index.html` makes the application suitable for GitHub Pages published from the repository root.
 
-## Quickstart
+## Mathematical convention
 
-### CLI Commands
+For `n` qubits and `N = 2ⁿ`, the forward transform is
+
+```text
+QFT |j⟩ = (1/√N) Σₖ exp(2πijk/N) |k⟩
+```
+
+Qubit 0 is the most significant bit. The circuit uses Hadamard gates, controlled phase rotations, and final bit reversal. The inverse uses conjugate phases in reverse gate order.
+
+## Python usage
+
+Requires Python 3.9 or later. The core mathematical engine uses only the standard library; the installed CLI also uses Pydantic.
 
 ```bash
-# Apply QFT to basis state |5⟩ with 3 qubits
-python cli.py qft -n 3 -s 5 --verify
-
-# Display QFT matrix for 3 qubits with unitarity check
-python cli.py matrix -n 3 --verify
-
-# Demonstrate period finding with QFT
-python cli.py period -r 4 -n 6 --show-probs
-
-# QFT of uniform superposition (should give |0⟩)
-python cli.py superposition -n 3
-
-# Phase estimation demo
-python cli.py phase-est --phases "0.25,0.5" --ancilla-qubits 4
-
-# Run audit task evaluation
-python cli.py audit --task-id TASK-01 --primary-metric 15.0
-
-# Chat with supervisor
-python cli.py chat "Explain quantum Fourier transform"
-
-# Verify audit trail integrity
-python cli.py verify-audit
+python -m pip install -e .
+quantum-fourier-transform-qft qft -n 3 -s 5 --verify
+quantum-fourier-transform-qft matrix -n 3 --verify
+quantum-fourier-transform-qft period -r 4 -n 6
+quantum-fourier-transform-qft phase-est --phases "0.25,0.5" --ancilla-qubits 4
 ```
 
-### Python API
+Equivalent direct entry point: `python cli.py qft -n 3 -s 5 --verify`.
 
 ```python
-from qft_engine.engine import apply_qft, basis_state, fidelity, state_info
+from qft_engine.engine import basis_state, apply_qft, apply_inverse_qft, fidelity
 
-# Create |3⟩ state for 3 qubits
-state = basis_state(3, 3)
-
-# Apply QFT
-result = apply_qft(state, 3)
-
-# Check result info
-info = state_info(result, 3)
-for comp in info['nonzero_components']:
-    print(f"|{comp['label']}⟩: prob = {comp['probability']:.4f}")
+source = basis_state(3, 5)
+spectrum = apply_qft(source, 3)
+recovered = apply_inverse_qft(spectrum, 3)
+assert fidelity(source, recovered) > 1 - 1e-10
 ```
 
----
+State-vector transforms are limited to 12 qubits to bound memory and work; explicit dense QFT matrices are limited to 6 qubits. Period finding constructs an idealized periodic state. The phase-estimation example assumes known eigenphases and estimates each independently; it does **not** simulate controlled-unitary evolution or quantum hardware.
 
-## Testing
+## Tests
 
 ```bash
-# Set audit key (required for tests)
-export AUDIT_SECRET_KEY="test-key-for-development-only"
-
-# Run all tests
-pytest -v
-
-# Run specific test suites
-pytest tests/test_qft_engine.py -v
-pytest tests/test_security.py -v
-pytest tests/test_enrichment.py -v
+python -m pip install -e ".[test,server]"
+AUDIT_SECRET_KEY=ci-local-test-key-not-for-production python -m pytest -q
+node --check web/qft.js
+node --check web/app.js
+node --test tests/test_browser_qft.cjs
 ```
 
-**Test Results:** 70+ tests covering:
-- State vector operations
-- Gate matrix unitarity
-- QFT circuit vs matrix consistency
-- Round-trip fidelity (QFT → IQFT)
-- QFT mathematical properties (unitarity, norm preservation)
-- Period finding accuracy
-- PHI guard enforcement
-- Audit trail integrity and tamper detection
-- CLI command execution
+The Python suite covers QFT matrix/circuit agreement, unitarity, inverse round trips, input bounds, CLI operations, and the optional audit subsystem. The Node tests compare the browser implementation with the analytic Fourier matrix and verify inverse round trips. GitHub Actions runs Python 3.10–3.12 and Node 22.
 
----
+## Optional API and audit subsystem
 
-## Architecture
+The repository also contains a legacy mock supervisor/audit subsystem, independent of the QFT state-vector simulator. It is not a quantum hardware controller, validated clinical decision tool, or post-quantum cryptographic implementation.
 
-```
-quantum-fourier-transform-qft/
-├── cli.py                    # Main CLI entry point
-├── simulator.py              # High-throughput simulation
-├── enrichment.py             # Feature enrichment engines
-├── qft_engine/
-│   └── engine.py             # Core QFT implementation
-├── agents/
-│   ├── base.py               # Security, PHI guard, audit trail
-│   ├── models.py             # Pydantic data models
-│   ├── workers.py            # Domain worker agents
-│   ├── supervisor.py         # Master orchestrator
-│   ├── api.py                # FastAPI REST server
-│   ├── metrics.py            # Prometheus telemetry
-│   ├── learning.py           # Bayesian calibration
-│   ├── llm_factory.py        # LLM provider abstraction
-│   └── streamer.py           # WebSocket telemetry
-├── tests/                    # Test suite
-├── web/index.html            # Operations console
-├── Dockerfile                # Container build
-└── docker-compose.yml        # Container orchestration
-```
-
----
-
-## Security
-
-- **PHI Guard**: Active regex inspection blocking SSNs, MRNs, phone numbers, emails, DOBs, and patient names
-- **Audit Trail**: HMAC-SHA256 chained, cryptographically signed logs with tamper detection
-- **Secure Key Management**: `AUDIT_SECRET_KEY` environment variable required (no hardcoded defaults)
-
-### Setting the Audit Key
+Install the optional server dependencies and set a unique audit signing key:
 
 ```bash
-# Generate a secure key
-python -c "import secrets; print(secrets.token_hex(32))"
-
-# Set environment variable
-export AUDIT_SECRET_KEY="your-generated-key-here"
+python -m pip install -e ".[server]"
+export AUDIT_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+python cli.py serve
+# Local API: http://127.0.0.1:8000/health
 ```
 
----
-
-## Docker Deployment
+Alternatively, use Docker Compose after exporting `AUDIT_SECRET_KEY`:
 
 ```bash
-docker build -t quantum-fourier-transform-qft .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY="your-key" quantum-fourier-transform-qft
+docker compose up --build
 ```
 
-Or with docker-compose:
+The container binds port 8000. The audit logger retains its HMAC chain **in memory only**; it is not a persistent or independently anchored audit store. The optional API is unauthenticated and should only be exposed in a trusted environment until proper authentication, TLS, durable audit storage, and operational safeguards are implemented. Its identifier filtering is pattern-based and **does not guarantee de-identification**. Do not submit real patient information or secrets to this demonstration.
 
-```bash
-AUDIT_SECRET_KEY="your-key" docker-compose up
-```
+## Technology and privacy
 
----
+- Python 3.9+, standard-library QFT math; Pydantic for the CLI's ancillary audit features
+- HTML, CSS, dependency-free modern JavaScript for the static browser simulator
+- Optional FastAPI/Uvicorn server; Docker Compose
+- MIT license: see [LICENSE](LICENSE)
 
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
+The browser simulator does not call a backend or send entered states to a service; JSON exports are generated locally. The static UI targets current evergreen browsers with modern JavaScript support. The API is separate and should not be used as a public production service without further hardening.
